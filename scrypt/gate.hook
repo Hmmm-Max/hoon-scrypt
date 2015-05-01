@@ -26,17 +26,34 @@
                  =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
                  =+  zc=(qr ~[&11.y &12.y &9.y &10.y])
                  =+  zd=(qr ~[&16.y &13.y &14.y &15.y])
-                 ^-  (list ,@)  ~[&1.za &2.za &3.za &4.za &4.zb &1.zb &2.zb &3.zb &3.zc &4.zc &1.zc &2.zc &2.zd &3.zd &4.zd &1.zd]
+                 ^-  (list ,@)  :~
+                   &1.za  &2.za  &3.za  &4.za
+                   &4.zb  &1.zb  &2.zb  &3.zb 
+                   &3.zc  &4.zc  &1.zc  &2.zc
+                   &2.zd  &3.zd  &4.zd  &1.zd
+                   ==
                  ++  cr                                ::  columnround
                  |=  [x=(list ,@)]
-                 =+  y=(rr `(list ,@)`~[&1.x &5.x &9.x &13.x &2.x &6.x &10.x &14.x &3.x &7.x &11.x &15.x &4.x &8.x &12.x &16.x])
-                 ^-  (list ,@)  ~[&1.y &5.y &9.y &13.y &2.y &6.y &10.y &14.y &3.y &7.y &11.y &15.y &4.y &8.y &12.y &16.y]
+                 =+  ^=  y  %-  rr  ^-  (list ,@)  :~
+                   &1.x  &5.x   &9.x  &13.x
+                   &2.x  &6.x  &10.x  &14.x
+                   &3.x  &7.x  &11.x  &15.x
+                   &4.x  &8.x  &12.x  &16.x
+                   ==
+                 ^-  (list ,@)  :~
+                   &1.y  &5.y   &9.y  &13.y
+                   &2.y  &6.y  &10.y  &14.y
+                   &3.y  &7.y  &11.y  &15.y
+                   &4.y  &8.y  &12.y  &16.y
+                   ==
                  ++  dr                                ::  doubleround
                  |=  [x=(list ,@)]
                  (rr (cr x))
                  ++  le                                ::  littleendian
                  |=  b=[@ @ @ @ ~]
-                 (add (add &1.b (lsh 3 1 &2.b)) (add (lsh 3 2 &3.b) (lsh 3 3 &4.b)))
+                 %+  add
+                   (add &1.b (lsh 3 1 &2.b))
+                 (add (lsh 3 2 &3.b) (lsh 3 3 &4.b))
                  ++  wr                                ::  bytes to words
                  |=  a=(list ,@)
                  |-  ^-  (list ,@)
@@ -48,7 +65,8 @@
                  ?~  a  ~
                  =+  b=-.a
                  %+  weld
-                   %+  turn  `(list ,@)`~[b (rsh 3 1 b) (rsh 3 2 b) (rsh 3 3 b)]
+                   %+  turn  ^-  (list ,@)
+                     ~[b (rsh 3 1 b) (rsh 3 2 b) (rsh 3 3 b)]
                    |=(a=@ (end 3 1 a))
                  $(a +.a)
                  ++  al                                ::  add two lists
