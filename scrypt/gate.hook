@@ -6,177 +6,185 @@
 ::::
 !:  =<
 |=  [* [[pass=tape salt=tape n=@ r=@ p=@ dklen=@ ~] ~]]
-:-  %noun  `(list ,@x)`(scr pass salt n r p dklen)
+:-  %noun  `(list ,@x)`(hsh:scr pass salt n r p dklen)
+:: :-  %noun  `(list ,@x)`(rpp 5 10 999.999)
 ::
 |%
-++  sal  |=  [x=(list ,@)]                             ::  salsa20/8 hash
-         =+  few==>(fe .(a 5))
-         =+  rot=|=([a=@ b=@] (mix (end 5 1 (lsh 0 a b)) (rsh 0 (sub 32 a) b)))
-         =+  lea=|=([a=@ b=@] (net:few (sum:few (net:few a) (net:few b))))
-         =>  |%  ++  qr                                ::  quarterround
-                 |=  y=[@ @ @ @ ~]
-                 =+  zb=(mix &2.y (rot 7 (sum:few &1.y &4.y)))
-                 =+  zc=(mix &3.y (rot 9 (sum:few zb &1.y)))
-                 =+  zd=(mix &4.y (rot 13 (sum:few zc zb)))
-                 =+  za=(mix &1.y (rot 18 (sum:few zd zc)))
-                 ~[za zb zc zd]
-                 ++  rr                                ::  rowround
-                 |=  [y=(list ,@)]
-                 =+  za=(qr ~[&1.y &2.y &3.y &4.y])
-                 =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
-                 =+  zc=(qr ~[&11.y &12.y &9.y &10.y])
-                 =+  zd=(qr ~[&16.y &13.y &14.y &15.y])
-                 ^-  (list ,@)  :~
-                   &1.za  &2.za  &3.za  &4.za
-                   &4.zb  &1.zb  &2.zb  &3.zb 
-                   &3.zc  &4.zc  &1.zc  &2.zc
-                   &2.zd  &3.zd  &4.zd  &1.zd
-                   ==
-                 ++  cr                                ::  columnround
-                 |=  [x=(list ,@)]
-                 =+  ^=  y  %-  rr  ^-  (list ,@)  :~
-                   &1.x  &5.x   &9.x  &13.x
-                   &2.x  &6.x  &10.x  &14.x
-                   &3.x  &7.x  &11.x  &15.x
-                   &4.x  &8.x  &12.x  &16.x
-                   ==
-                 ^-  (list ,@)  :~
-                   &1.y  &5.y   &9.y  &13.y
-                   &2.y  &6.y  &10.y  &14.y
-                   &3.y  &7.y  &11.y  &15.y
-                   &4.y  &8.y  &12.y  &16.y
-                   ==
-                 ++  dr                                ::  doubleround
-                 |=  [x=(list ,@)]
-                 (rr (cr x))
-                 ++  le                                ::  littleendian
-                 |=  b=[@ @ @ @ ~]
-                 %+  add
-                   (add &1.b (lsh 3 1 &2.b))
-                 (add (lsh 3 2 &3.b) (lsh 3 3 &4.b))
-                 ++  wr                                ::  bytes to words
-                 |=  a=(list ,@)
-                 |-  ^-  (list ,@)
-                 ?~  a  ~
-                 [i=(le ~[&1.a &2.a &3.a &4.a]) t=$(a `(list ,@)`|4.a)]
-                 ++  by                                ::  words to bytes
-                 |=  a=(list ,@)
-                 |-  ^-  (list ,@)
-                 ?~  a  ~
-                 =+  b=-.a
-                 %+  weld
-                   %+  turn  ^-  (list ,@)
-                     ~[b (rsh 3 1 b) (rsh 3 2 b) (rsh 3 3 b)]
-                   |=(a=@ (end 3 1 a))
-                 $(a +.a)
-                 ++  al                                ::  add two lists
-                 |=  [a=(list ,@) b=(list ,@)]
-                 |-  ^-  (list ,@)
-                 ?~  a  ~  ?~  b  ~
-                 [i=(sum:few -.a -.b) t=$(a +.a, b +.b)]
-                 --
-         =+  [xw=(wr x) c=4]                           ::  4 doublerounds
-         =+  ^=  ow  |-  ^-  (list ,@)
-                     ?~  c  xw
-                     $(xw (dr xw), c (dec c))
-         (by (al xw ow))
-::
-++  rpp  |=  [a=bloq b=@ c=@]                          ::  rip w/filler blocks
-         =+  q=(rip a c)
-         ?:  (lth (lent q) b)
-           ^+  q  (weld q (reap (sub b (lent q)) 0))
-         q
-::
-++  hmc  |=  [k=(list ,@) t=(list ,@)]                 ::  HMAC-SHA-256
-         =+  b=64
-         =.  k  ?.  (gth (lent k) b)  k
-           ~+  (rpp 3 32 (shay (lent k) (rep 3 k)))
-         =+  [ip=`(list ,@)`(reap b 0x36) op=`(list ,@)`(reap b 0x5c)]
-         =+  qa=(weld (xrl k ip) t)
-         =+  qb=(rpp 3 32 (shay (lent qa) (rep 3 qa)))
-         =+  qc=(weld (xrl k op) qb)
-         (rpp 3 32 (shay (lent qc) (rep 3 qc)))
-::
-++  pbk  |=  [p=(list ,@) s=(list ,@) c=@ d=@]         :: PBKDF2-HMAC-SHA256
-         =+  h=32
-         ?>  (lte d (mul h (dec (bex 32))))
-         =+  ^=  l  ?~  (mod d h)
-           (div d h)
-         +((div d h))
-         =+  r=(sub d (mul h (dec l)))
-         =+  [t=*(list ,@) j=1 k=1]
-         =.  t
+++  scr
+  |%
+  ++  sal  |=  [x=(list ,@)]                             ::  salsa20/8 hash
+           =+  few==>(fe .(a 5))
+           =+  ^=  rot
+             |=  [a=@ b=@]
+             (mix (end 5 1 (lsh 0 a b)) (rsh 0 (sub 32 a) b))
+           =+  ^=  lea
+             |=  [a=@ b=@]
+             (net:few (sum:few (net:few a) (net:few b)))
+           =>  |%  ++  qr                                ::  quarterround
+                   |=  y=[@ @ @ @ ~]
+                   =+  zb=(mix &2.y (rot 7 (sum:few &1.y &4.y)))
+                   =+  zc=(mix &3.y (rot 9 (sum:few zb &1.y)))
+                   =+  zd=(mix &4.y (rot 13 (sum:few zc zb)))
+                   =+  za=(mix &1.y (rot 18 (sum:few zd zc)))
+                   ~[za zb zc zd]
+                   ++  rr                                ::  rowround
+                   |=  [y=(list ,@)]
+                   =+  za=(qr ~[&1.y &2.y &3.y &4.y])
+                   =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
+                   =+  zc=(qr ~[&11.y &12.y &9.y &10.y])
+                   =+  zd=(qr ~[&16.y &13.y &14.y &15.y])
+                   ^-  (list ,@)  :~
+                     &1.za  &2.za  &3.za  &4.za
+                     &4.zb  &1.zb  &2.zb  &3.zb 
+                     &3.zc  &4.zc  &1.zc  &2.zc
+                     &2.zd  &3.zd  &4.zd  &1.zd
+                     ==
+                   ++  cr                                ::  columnround
+                   |=  [x=(list ,@)]
+                   =+  ^=  y  %-  rr  ^-  (list ,@)  :~
+                     &1.x  &5.x   &9.x  &13.x
+                     &2.x  &6.x  &10.x  &14.x
+                     &3.x  &7.x  &11.x  &15.x
+                     &4.x  &8.x  &12.x  &16.x
+                     ==
+                   ^-  (list ,@)  :~
+                     &1.y  &5.y   &9.y  &13.y
+                     &2.y  &6.y  &10.y  &14.y
+                     &3.y  &7.y  &11.y  &15.y
+                     &4.y  &8.y  &12.y  &16.y
+                     ==
+                   ++  dr                                ::  doubleround
+                   |=  [x=(list ,@)]
+                   (rr (cr x))
+                   ++  le                                ::  littleendian
+                   |=  b=[@ @ @ @ ~]
+                   %+  add
+                     (add &1.b (lsh 3 1 &2.b))
+                   (add (lsh 3 2 &3.b) (lsh 3 3 &4.b))
+                   ++  wr                                ::  bytes to words
+                   |=  a=(list ,@)
+                   |-  ^-  (list ,@)
+                   ?~  a  ~
+                   [i=(le ~[&1.a &2.a &3.a &4.a]) t=$(a `(list ,@)`|4.a)]
+                   ++  by                                ::  words to bytes
+                   |=  a=(list ,@)
+                   |-  ^-  (list ,@)
+                   ?~  a  ~
+                   =+  b=-.a
+                   %+  weld
+                     %+  turn  ^-  (list ,@)
+                       ~[b (rsh 3 1 b) (rsh 3 2 b) (rsh 3 3 b)]
+                     |=(a=@ (end 3 1 a))
+                   $(a +.a)
+                   ++  al                                ::  add two lists
+                   |=  [a=(list ,@) b=(list ,@)]
+                   |-  ^-  (list ,@)
+                   ?~  a  ~  ?~  b  ~
+                   [i=(sum:few -.a -.b) t=$(a +.a, b +.b)]
+                   --
+           =+  [xw=(wr x) c=4]                           ::  4 doublerounds
+           =+  ^=  ow  |-  ^-  (list ,@)
+                       ?~  c  xw
+                       $(xw (dr xw), c (dec c))
+           (by (al xw ow))
+  ::
+  ++  rpp  |=  [a=bloq b=@ c=@]                          ::  rip w/filler blocks
+           =+  q=(rip a c)
+           ?:  (lth (lent q) b)
+             ^+  q  (weld q (reap (sub b (lent q)) 0))
+           q
+  ::
+  ++  xrl  |=  [a=(list ,@) b=(list ,@)]                 ::  xor lists
            |-  ^-  (list ,@)
-           ?:  (gth j l)  t
-           =+  u=(weld s (flop (rpp 3 4 j)))
-           =|  f=(list ,@)
-           =.  f
+           ?~  a  b  ?~  b  a
+           [i=(mix -.a -.b) t=$(a +.a, b +.b)]
+  ++  xrm  |=  [a=(list (list ,@)) b=(list (list ,@))]
+           |-  ^-  (list (list ,@))
+           ?~  a  b  ?~  b  a
+           [i=(xrl -.a -.b) t=$(a +.a, b +.b)]
+  ::
+  ++  bls  |=  [a=@ b=(list ,@)]                         ::  split to sublists
+           :: ?>  =((mod (lent b) a) 0)
+           |-  ^-  (list (list ,@))
+           ?~  b  ~
+           [i=(scag a `(list ,@)`b) t=$(b (slag a `(list ,@)`b))]
+  ::
+  ++  slb  |=  [a=(list (list ,@))]
+           |-  ^-  (list ,@)
+           ?~  a  ~
+           (weld `(list ,@)`-.a $(a +.a))
+  ::
+  ++  sbm  |=  [r=@ b=(list (list ,@))]                  ::  scryptBlockMix
+           :: ?>  =((lent b) (mul 2 r))
+           :: ?>  (levy b |=(a=(list ,@) =((lent a) 64)))
+           =+  [x=(snag (dec (mul 2 r)) b) c=0]
+           =|  [ya=(list (list ,@)) yb=(list (list ,@))]
+           |-  ^-  (list (list ,@))
+           ?~  b  (flop (weld yb ya))
+           =.  x  (sal (xrl x -.b))
+           ?~  (mod c 2)
+             $(c +(c), b +.b, ya [i=[x] t=ya])
+           $(c +(c), b +.b, yb [i=[x] t=yb])
+  ::
+  ++  srm  |=  [r=@ b=(list (list ,@)) n=@]              ::  scryptROMix
+           :: ?>  =((lent b) (mul 2 r))
+           :: ?>  (levy b |=(a=(list ,@) =((lent a) 64)))
+           =|  v=(list (list (list ,@)))
+           =+  c=0
+           =.  v
+             |-  ^-  (list (list (list ,@)))
+             =+  w=(sbm r b)
+             ?:  =(c n)  (flop v)
+             $(c +(c), v [i=[b] t=v], b w)
+           =+  x=(sbm r (snag (dec n) v))
+           |-  ^-  (list (list ,@))
+           ?:  =(c n)  x
+           =+  [q=(snag (dec (mul r 2)) x) w=(dec (xeb n))]
+           =+  ^=  j  |-  ^-  @
+                      ?:  (lte w 8)  (mod -.q (bex w))
+                      (add -.q (mul 256 $(q +.q, w (sub w 8))))
+           $(x (sbm r (xrm x (snag j v))), c +(c))
+  ::
+  ++  hmc  |=  [k=(list ,@) t=(list ,@)]                 ::  HMAC-SHA-256
+           =+  b=64
+           =.  k  ?.  (gth (lent k) b)  k
+             ~+  (rpp 3 32 (shay (lent k) (rep 3 k)))
+           =+  [ip=`(list ,@)`(reap b 0x36) op=`(list ,@)`(reap b 0x5c)]
+           =+  qa=(weld (xrl k ip) t)
+           =+  qb=(rpp 3 32 (shay (lent qa) (rep 3 qa)))
+           =+  qc=(weld (xrl k op) qb)
+           (rpp 3 32 (shay (lent qc) (rep 3 qc)))
+  ::
+  ++  pbk  |=  [p=(list ,@) s=(list ,@) c=@ d=@]         :: PBKDF2-HMAC-SHA256
+           =+  h=32
+           ?>  (lte d (mul h (dec (bex 32))))
+           =+  ^=  l  ?~  (mod d h)
+             (div d h)
+           +((div d h))
+           =+  r=(sub d (mul h (dec l)))
+           =+  [t=*(list ,@) j=1 k=1]
+           =.  t
              |-  ^-  (list ,@)
-             ?:  (gth k c)  f 
-             =+  q=(hmc p u)
-             $(u q, f (xrl f q), k +(k))
-           $(t (weld t f), j +(j))
-         (scag d t)
-::
-++  xrl  |=  [a=(list ,@) b=(list ,@)]                 ::  xor lists
-         |-  ^-  (list ,@)
-         ?~  a  b  ?~  b  a
-         [i=(mix -.a -.b) t=$(a +.a, b +.b)]
-++  xrm  |=  [a=(list (list ,@)) b=(list (list ,@))]
-         |-  ^-  (list (list ,@))
-         ?~  a  b  ?~  b  a
-         [i=(xrl -.a -.b) t=$(a +.a, b +.b)]
-::
-++  bls  |=  [a=@ b=(list ,@)]                         ::  split to sublists
-         :: ?>  =((mod (lent b) a) 0)
-         |-  ^-  (list (list ,@))
-         ?~  b  ~
-         [i=(scag a `(list ,@)`b) t=$(b (slag a `(list ,@)`b))]
-++  slb  |=  [a=(list (list ,@))]
-         |-  ^-  (list ,@)
-         ?~  a  ~
-         (weld `(list ,@)`-.a $(a +.a))
-::
-++  sbm  |=  [r=@ b=(list (list ,@))]                  ::  scryptBlockMix
-         :: ?>  =((lent b) (mul 2 r))
-         :: ?>  (levy b |=(a=(list ,@) =((lent a) 64)))
-         =+  [x=(snag (dec (mul 2 r)) b) c=0]
-         =|  [ya=(list (list ,@)) yb=(list (list ,@))]
-         |-  ^-  (list (list ,@))
-         ?~  b  (flop (weld yb ya))
-         =.  x  (sal (xrl x -.b))
-         ?~  (mod c 2)
-           $(c +(c), b +.b, ya [i=[x] t=ya])
-         $(c +(c), b +.b, yb [i=[x] t=yb])
-::
-++  srm  |=  [r=@ b=(list (list ,@)) n=@]              ::  scryptROMix
-         :: ?>  =((lent b) (mul 2 r))
-         :: ?>  (levy b |=(a=(list ,@) =((lent a) 64)))
-         =|  v=(list (list (list ,@)))
-         =+  c=0
-         =.  v
-           |-  ^-  (list (list (list ,@)))
-           =+  w=(sbm r b)
-           ?:  =(c n)  (flop v)
-           $(c +(c), v [i=[b] t=v], b w)
-         =+  x=(sbm r (snag (dec n) v))
-         |-  ^-  (list (list ,@))
-         ?:  =(c n)  x
-         =+  [q=(snag (dec (mul r 2)) x) w=(dec (xeb n))]
-         =+  ^=  j  |-  ^-  @
-                    ?:  (lte w 8)  (mod -.q (bex w))
-                    (add -.q (mul 256 $(q +.q, w (sub w 8))))
-         $(x (sbm r (xrm x (snag j v))), c +(c))
-::
-++  scr  |=  [p=(list ,@) s=(list ,@) n=@ r=@ z=@ d=@] ::  scrypt
-         =|  v=(list (list (list ,@)))
-         ?>  =(n (bex (dec (xeb n))))                  ::  n is power of 2
-         =+  ^=  b  =+  (pbk p s 1 (mul (mul 128 r) z))
-           (turn (bls (mul 128 r) -) |=(a=(list ,@) (bls 64 a)))
-         ?>  =((lent b) z)
-         =+  ^=  w
-           =+  |-  ?~  b  (flop v)  $(b +.b, v [i=(srm r -.b n) t=v])
-           (turn `(list (list (list ,@)))`- slb)
-         (pbk p (slb w) 1 d)
+             ?:  (gth j l)  t
+             =+  u=(weld s (flop (rpp 3 4 j)))
+             =|  f=(list ,@)
+             =.  f
+               |-  ^-  (list ,@)
+               ?:  (gth k c)  f 
+               =+  q=(hmc p u)
+               $(u q, f (xrl f q), k +(k))
+             $(t (weld t f), j +(j))
+           (scag d t)
+  ::
+  ++  hsh  |=  [p=(list ,@) s=(list ,@) n=@ r=@ z=@ d=@] ::  scrypt
+           =|  v=(list (list (list ,@)))
+           ?>  =(n (bex (dec (xeb n))))                  ::  n is power of 2
+           =+  ^=  b  =+  (pbk p s 1 (mul (mul 128 r) z))
+             (turn (bls (mul 128 r) -) |=(a=(list ,@) (bls 64 a)))
+           ?>  =((lent b) z)
+           =+  ^=  w
+             =+  |-  ?~  b  (flop v)  $(b +.b, v [i=(srm r -.b n) t=v])
+             (turn `(list (list (list ,@)))`- slb)
+           (pbk p (slb w) 1 d)
+  --
 --
-
