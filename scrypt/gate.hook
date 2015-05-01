@@ -7,7 +7,6 @@
 !:  =<
 |=  [* [[pass=tape salt=tape n=@ r=@ p=@ dklen=@ ~] ~]]
 :-  %noun  `(list ,@x)`(hsh:scr pass salt n r p dklen)
-:: :-  %noun  `(list ,@x)`(rpp 5 10 999.999)
 ::
 |%
 ++  scr
