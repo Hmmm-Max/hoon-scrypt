@@ -6,7 +6,7 @@
 ::::
 !:  =<
 |=  [* [[pass=cord salt=cord n=@ r=@ p=@ dklen=@ ~] ~]]
-:-  %noun  `(list ,@x)`(hsh:scr pass salt n r p dklen)
+:-  %noun  `@x`(hsh:scr pass salt n r p dklen)
 ::
 |%
 ++  scr
@@ -70,8 +70,9 @@
   ::
   ++  rpp  |=  [a=bloq b=@ c=@]                         ::  rip w/filler blocks
            =+  q=(rip a c)
-           ?.  =((lent q) b)
-             ?.  (lth (lent q) b)  !!
+           =+  w=(lent q)
+           ?.  =(w b)
+             ?.  (lth w b)  (slag (sub w b) q)
              ^+  q  (weld q (reap (sub b (lent q)) 0))
            q
   ::
@@ -96,7 +97,7 @@
            ?~  a  ~
            (weld `(list ,@)`-.a $(a +.a))
   ::
-  ++  sbm  |=  [r=@ b=(list ,@)]                         ::  scryptBlockMix
+  ++  sbm  |=  [r=@ b=(list ,@)]                        ::  scryptBlockMix
            ?>  =((lent b) (mul 2 r))
            =+  [x=(snag (dec (mul 2 r)) b) c=0]
            =|  [ya=(list ,@) yb=(list ,@)]
@@ -107,8 +108,12 @@
              $(c +(c), b +.b, ya [i=x t=ya])
            $(c +(c), b +.b, yb [i=x t=yb])
   ::
-  ++  srm  |=  [r=@ b=(list ,@) n=@]                     ::  scryptROMix
-           ?>  =((lent b) (mul 2 r))
+  ++  srm  |=  [r=@ b=(list ,@) n=@]                    ::  scryptROMix
+           ?>  ?&
+             =((lent b) (mul 2 r))
+             =(n (bex (dec (xeb n))))
+             (lth n (bex (mul r 16)))
+             ==
            =|  v=(list (list ,@))
            =+  c=0
            =.  v
@@ -126,20 +131,20 @@
            (hml k (met 3 k) t (met 3 t))
   ::
   ++  hml  |=  [k=@ kl=@ t=@ tl=@]                      ::  w/length
+           =.  k  (end 3 kl k)  =.  t  (end 3 tl t)
            =+  b=64
            =+  [w=(rpp 3 kl k) x=(rpp 3 tl t)]
-           =.  w  ?.  (gth kl b)  w
-             ~+  (rpp 3 32 (shay kl k))
-           =+  [ip=`(list ,@)`(reap b 0x36) op=`(list ,@)`(reap b 0x5c)]
-           =+  qa=(weld (xrl w ip) x)
-           =+  qb=(rpp 3 32 (shay (lent qa) (rep 3 qa)))
-           =+  qc=(weld (xrl w op) qb)
-           (rpp 3 32 (shay (lent qc) (rep 3 qc)))
+           =.  k  ?.  (gth kl b)  k  (shay kl k)
+           =+  ^=  q  %+  shay  (add b tl)
+             (add (lsh 3 b t) (mix k (fil 3 b 0x36)))
+           %+  shay  (add b 32)
+           (add (lsh 3 b q) (mix k (fil 3 b 0x5c)))
   ::
   ++  pbk  |=  [p=@ s=@ c=@ d=@]                        :: PBKDF2-HMAC-SHA256
            (pbl p (met 3 p) s (met 3 s) c d)
   ::
   ++  pbl  |=  [p=@ pl=@ s=@ sl=@ c=@ d=@]              :: w/length
+           =.  p  (end 3 pl p)  =.  s  (end 3 sl s)
            =+  h=32
            =+  [w=(rpp 3 pl p) x=(rpp 3 sl s)]
            ?>  (lte d (mul h (dec (bex 32))))
@@ -147,28 +152,28 @@
              (div d h)
            +((div d h))
            =+  r=(sub d (mul h (dec l)))
-           =+  [t=*(list ,@) j=1 k=1]
-           =.  t
-             |-  ^-  (list ,@)
+           =+  [t=0 j=1 k=1]
+           =.  t  |-  ^-  @
              ?:  (gth j l)  t
-             =+  u=(weld x (flop (rpp 3 4 j)))
-             =|  f=(list ,@)
-             =.  f
-               |-  ^-  (list ,@)
+             =+  u=(add s (lsh 3 sl (rep 3 (flop (rpp 3 4 j)))))
+             =+  f=0  =.  f  |-  ^-  @
                ?:  (gth k c)  f 
-               =+  q=(hml p pl (rep 3 u) (lent u))
-               $(u q, f (xrl f q), k +(k))
-             $(t (weld t f), j +(j))
-           (scag d t)
+               =+  q=(hml p pl u ?:(=(k 1) (add sl 4) h))
+               $(u q, f (mix f q), k +(k))
+             $(t (add t (lsh 3 (mul (dec j) h) f)), j +(j))
+           (end 3 d t)
   ::
   ++  hsh  |=  [p=@ s=@ n=@ r=@ z=@ d=@]                ::  scrypt
            (hsl p (met 3 p) s (met 3 s) n r z d)
   ::
   ++  hsl  |=  [p=@ pl=@ s=@ sl=@ n=@ r=@ z=@ d=@]      ::  w/length
            =|  v=(list (list ,@))
+           =.  p  (end 3 pl p)  =.  s  (end 3 sl s)
            =+  [w=(rpp 3 pl p) x=(rpp 3 sl s)]
+           =+  u=(mul (mul 128 r) z)
            ?>  =(n (bex (dec (xeb n))))                 ::  n is power of 2
-           =+  ^=  b  =+  (pbl p pl s sl 1 (mul (mul 128 r) z))
+           =+  ^=  b  =+  %^  rpp  3  u
+             (pbl p pl s sl 1 u)
              %+  turn  (bls (mul 128 r) -)
              |=(a=(list ,@) (rpp 9 (mul 2 r) (rep 3 a)))
            ?>  =((lent b) z)
@@ -177,6 +182,6 @@
                  $(b +.b, v [i=(srm r -.b n) t=v])
              %+  turn  `(list (list ,@))`-
              |=(a=(list ,@) (rpp 3 (mul 128 r) (rep 9 a)))
-           (pbl p pl (rep 3 (slb q)) (mul (mul 128 r) z) 1 d)
+           (pbl p pl (rep 3 (slb q)) u 1 d)
   --
 --
