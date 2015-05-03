@@ -133,7 +133,6 @@
   ++  hml  |=  [k=@ kl=@ t=@ tl=@]                      ::  w/length
            =.  k  (end 3 kl k)  =.  t  (end 3 tl t)
            =+  b=64
-           =+  [w=(rpp 3 kl k) x=(rpp 3 tl t)]
            =.  k  ?.  (gth kl b)  k  (shay kl k)
            =+  ^=  q  %+  shay  (add b tl)
              (add (lsh 3 b t) (mix k (fil 3 b 0x36)))
@@ -146,7 +145,6 @@
   ++  pbl  |=  [p=@ pl=@ s=@ sl=@ c=@ d=@]              :: w/length
            =.  p  (end 3 pl p)  =.  s  (end 3 sl s)
            =+  h=32
-           =+  [w=(rpp 3 pl p) x=(rpp 3 sl s)]
            ?>  (lte d (mul h (dec (bex 32))))
            =+  ^=  l  ?~  (mod d h)
              (div d h)
@@ -169,7 +167,6 @@
   ++  hsl  |=  [p=@ pl=@ s=@ sl=@ n=@ r=@ z=@ d=@]      ::  w/length
            =|  v=(list (list ,@))
            =.  p  (end 3 pl p)  =.  s  (end 3 sl s)
-           =+  [w=(rpp 3 pl p) x=(rpp 3 sl s)]
            =+  u=(mul (mul 128 r) z)
            ?>  =(n (bex (dec (xeb n))))                 ::  n is power of 2
            =+  ^=  b  =+  %^  rpp  3  u
