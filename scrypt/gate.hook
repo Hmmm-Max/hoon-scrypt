@@ -11,8 +11,8 @@
 |%
 ++  scr
   |%
-  ++  sal  |=  [x=@ r=@]                                 ::  salsa20/8 hash
-           ?>  =((mod r 2) 0)
+  ++  sal  |=  [x=@ r=@]                                ::  salsa20 hash
+           ?>  =((mod r 2) 0)                           ::  with r rounds
            =+  few==>(fe .(a 5))
            =+  ^=  rot
              |=  [a=@ b=@]
@@ -20,14 +20,14 @@
            =+  ^=  lea
              |=  [a=@ b=@]
              (net:few (sum:few (net:few a) (net:few b)))
-           =>  |%  ++  qr                                ::  quarterround
+           =>  |%  ++  qr                               ::  quarterround
                    |=  y=[@ @ @ @ ~]
                    =+  zb=(mix &2.y (rot 7 (sum:few &1.y &4.y)))
                    =+  zc=(mix &3.y (rot 9 (sum:few zb &1.y)))
                    =+  zd=(mix &4.y (rot 13 (sum:few zc zb)))
                    =+  za=(mix &1.y (rot 18 (sum:few zd zc)))
                    ~[za zb zc zd]
-                   ++  rr                                ::  rowround
+                   ++  rr                               ::  rowround
                    |=  [y=(list ,@)]
                    =+  za=(qr ~[&1.y &2.y &3.y &4.y])
                    =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
@@ -39,7 +39,7 @@
                      &3.zc  &4.zc  &1.zc  &2.zc
                      &2.zd  &3.zd  &4.zd  &1.zd
                      ==
-                   ++  cr                                ::  columnround
+                   ++  cr                               ::  columnround
                    |=  [x=(list ,@)]
                    =+  ^=  y  %-  rr  ^-  (list ,@)  :~
                      &1.x  &5.x   &9.x  &13.x
@@ -53,29 +53,29 @@
                      &3.y  &7.y  &11.y  &15.y
                      &4.y  &8.y  &12.y  &16.y
                      ==
-                   ++  dr                                ::  doubleround
+                   ++  dr                               ::  doubleround
                    |=  [x=(list ,@)]
                    (rr (cr x))
-                   ++  al                                ::  add two lists
+                   ++  al                               ::  add two lists
                    |=  [a=(list ,@) b=(list ,@)]
                    |-  ^-  (list ,@)
                    ?~  a  ~  ?~  b  ~
                    [i=(sum:few -.a -.b) t=$(a +.a, b +.b)]
                    --
-           =+  xw=(rpp 5 16 x)                           ::  r/2 doublerounds
+           =+  xw=(rpp 5 16 x)
            =+  ^=  ow  |-  ^-  (list ,@)
                        ?~  r  xw
                        $(xw (dr xw), r (sub r 2))
            (rep 5 (al xw ow))
   ::
-  ++  rpp  |=  [a=bloq b=@ c=@]                          ::  rip w/filler blocks
+  ++  rpp  |=  [a=bloq b=@ c=@]                         ::  rip w/filler blocks
            =+  q=(rip a c)
            ?.  =((lent q) b)
              ?.  (lth (lent q) b)  !!
              ^+  q  (weld q (reap (sub b (lent q)) 0))
            q
   ::
-  ++  xrl  |=  [a=(list ,@) b=(list ,@)]                 ::  xor lists
+  ++  xrl  |=  [a=(list ,@) b=(list ,@)]                ::  xor lists
            |-  ^-  (list ,@)
            ?~  a  b  ?~  b  a
            [i=(mix -.a -.b) t=$(a +.a, b +.b)]
@@ -85,7 +85,7 @@
            ?~  a  b  ?~  b  a
            [i=(xrl -.a -.b) t=$(a +.a, b +.b)]
   ::
-  ++  bls  |=  [a=@ b=(list ,@)]                         ::  split to sublists
+  ++  bls  |=  [a=@ b=(list ,@)]                        ::  split to sublists
            ?>  =((mod (lent b) a) 0)
            |-  ^-  (list (list ,@))
            ?~  b  ~
