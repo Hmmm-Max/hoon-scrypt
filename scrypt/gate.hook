@@ -82,11 +82,6 @@
            ?~  a  b  ?~  b  a
            [i=(mix -.a -.b) t=$(a +.a, b +.b)]
   ::
-  ++  xrm  |=  [a=(list (list ,@)) b=(list (list ,@))]
-           |-  ^-  (list (list ,@))
-           ?~  a  b  ?~  b  a
-           [i=(xrl -.a -.b) t=$(a +.a, b +.b)]
-  ::
   ++  bls  |=  [a=@ b=(list ,@)]                        ::  split to sublists
            ?>  =((mod (lent b) a) 0)
            |-  ^-  (list (list ,@))
