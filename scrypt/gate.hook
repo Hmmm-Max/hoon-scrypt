@@ -9,7 +9,7 @@
 :-  %noun  `@x`(hsh:scr pass salt n r p dklen)
 ::
 |%
-++  scr
+++  scr                                                 ::  scrypt
   :: ~%  %scr  +  ~
   |%
   ++  sal  |=  [x=@ r=@]                                ::  salsa20 hash
@@ -21,48 +21,45 @@
            =+  ^=  lea
              |=  [a=@ b=@]
              (net:few (sum:few (net:few a) (net:few b)))
-           =>  |%  ++  qr                               ::  quarterround
-                   |=  y=[@ @ @ @ ~]
-                   =+  zb=(mix &2.y (rot 7 (sum:few &1.y &4.y)))
-                   =+  zc=(mix &3.y (rot 9 (sum:few zb &1.y)))
-                   =+  zd=(mix &4.y (rot 13 (sum:few zc zb)))
-                   =+  za=(mix &1.y (rot 18 (sum:few zd zc)))
-                   ~[za zb zc zd]
-                   ++  rr                               ::  rowround
-                   |=  [y=(list ,@)]
-                   =+  za=(qr ~[&1.y &2.y &3.y &4.y])
-                   =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
-                   =+  zc=(qr ~[&11.y &12.y &9.y &10.y])
-                   =+  zd=(qr ~[&16.y &13.y &14.y &15.y])
-                   ^-  (list ,@)  :~
-                     &1.za  &2.za  &3.za  &4.za
-                     &4.zb  &1.zb  &2.zb  &3.zb 
-                     &3.zc  &4.zc  &1.zc  &2.zc
-                     &2.zd  &3.zd  &4.zd  &1.zd
-                     ==
-                   ++  cr                               ::  columnround
-                   |=  [x=(list ,@)]
-                   =+  ^=  y  %-  rr  ^-  (list ,@)  :~
-                     &1.x  &5.x   &9.x  &13.x
-                     &2.x  &6.x  &10.x  &14.x
-                     &3.x  &7.x  &11.x  &15.x
-                     &4.x  &8.x  &12.x  &16.x
-                     ==
-                   ^-  (list ,@)  :~
-                     &1.y  &5.y   &9.y  &13.y
-                     &2.y  &6.y  &10.y  &14.y
-                     &3.y  &7.y  &11.y  &15.y
-                     &4.y  &8.y  &12.y  &16.y
-                     ==
-                   ++  dr                               ::  doubleround
-                   |=  [x=(list ,@)]
-                   (rr (cr x))
-                   ++  al                               ::  add two lists
-                   |=  [a=(list ,@) b=(list ,@)]
-                   |-  ^-  (list ,@)
-                   ?~  a  ~  ?~  b  ~
-                   [i=(sum:few -.a -.b) t=$(a +.a, b +.b)]
-                   --
+           =>  |%
+               ++  qr                                   ::  quarterround
+                 |=  y=[@ @ @ @ ~]
+                 =+  zb=(mix &2.y (rot 7 (sum:few &1.y &4.y)))
+                 =+  zc=(mix &3.y (rot 9 (sum:few zb &1.y)))
+                 =+  zd=(mix &4.y (rot 13 (sum:few zc zb)))
+                 =+  za=(mix &1.y (rot 18 (sum:few zd zc)))
+                 ~[za zb zc zd]
+               ++  rr                                   ::  rowround
+                 |=  [y=(list ,@)]
+                 =+  za=(qr ~[&1.y &2.y &3.y &4.y])
+                 =+  zb=(qr ~[&6.y &7.y &8.y &5.y])
+                 =+  zc=(qr ~[&11.y &12.y &9.y &10.y])
+                 =+  zd=(qr ~[&16.y &13.y &14.y &15.y])
+                 ^-  (list ,@)  :~
+                   &1.za  &2.za  &3.za  &4.za
+                   &4.zb  &1.zb  &2.zb  &3.zb 
+                   &3.zc  &4.zc  &1.zc  &2.zc
+                   &2.zd  &3.zd  &4.zd  &1.zd  ==
+               ++  cr                                   ::  columnround
+                 |=  [x=(list ,@)]
+                 =+  ya=(qr ~[&1.x &5.x &9.x &13.x])
+                 =+  yb=(qr ~[&6.x &10.x &14.x &2.x])
+                 =+  yc=(qr ~[&11.x &15.x &3.x &7.x])
+                 =+  yd=(qr ~[&16.x &4.x &8.x &12.x])
+                 ^-  (list ,@)  :~
+                   &1.ya  &4.yb  &3.yc  &2.yd
+                   &2.ya  &1.yb  &4.yc  &3.yd
+                   &3.ya  &2.yb  &1.yc  &4.yd
+                   &4.ya  &3.yb  &2.yc  &1.yd  ==
+               ++  dr                                   ::  doubleround
+                 |=  [x=(list ,@)]
+                 (rr (cr x))
+               ++  al                                   ::  add two lists
+                 |=  [a=(list ,@) b=(list ,@)]
+                 |-  ^-  (list ,@)
+                 ?~  a  ~  ?~  b  ~
+                 [i=(sum:few -.a -.b) t=$(a +.a, b +.b)]
+               --
            =+  xw=(rpp 5 16 x)
            =+  ^=  ow  |-  ^-  (list ,@)
                        ?~  r  xw
@@ -76,11 +73,6 @@
              ?.  (lth w b)  (slag (sub w b) q)
              ^+  q  (weld q (reap (sub b (lent q)) 0))
            q
-  ::
-  ++  xrl  |=  [a=(list ,@) b=(list ,@)]                ::  xor lists
-           |-  ^-  (list ,@)
-           ?~  a  b  ?~  b  a
-           [i=(mix -.a -.b) t=$(a +.a, b +.b)]
   ::
   ++  bls  |=  [a=@ b=(list ,@)]                        ::  split to sublists
            ?>  =((mod (lent b) a) 0)
@@ -121,7 +113,11 @@
            |-  ^-  (list ,@)
            ?:  =(c n)  x
            =+  q=(snag (dec (mul r 2)) x)
-           $(x (sbm r (xrl x (snag (mod q n) v))), c +(c))
+           =+  z=`(list ,@)`(snag (mod q n) v)
+           =+  ^=  w  |-  ^-  (list ,@)
+                      ?~  x  ~  ?~  z  ~
+                      [i=(mix -.x -.z) t=$(x +.x, z +.z)]
+           $(x (sbm r w), c +(c))
   ::
   ++  hmc  |=  [k=@ t=@]                                ::  HMAC-SHA-256
            (hml k (met 3 k) t (met 3 t))
